@@ -29,6 +29,9 @@ url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: jekyllrb
 github_username:  jekyll
 
+host: '127.0.0.1'
+port: 3001
+
 # Build settings
 theme: minima
 plugins:
