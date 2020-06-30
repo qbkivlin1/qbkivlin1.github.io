@@ -14,7 +14,7 @@ class UObjectBase
   int32 InternalIndex // 所有UObject对象都会放在FUObjectArray中，这个是下标。
   UClass* ClassPrivate // 这个UObject的对应的UClass
   FName* NamePrivate // 这个对象的名称
-  UObject* OuterPrivate // 这个对象的归属的UPackage
+  UObject* OuterPrivate // 这个对象的归属的UObject,比方说Component被Actor持有，Actor被Level持有
   }
 {% endhighlight %}
 
