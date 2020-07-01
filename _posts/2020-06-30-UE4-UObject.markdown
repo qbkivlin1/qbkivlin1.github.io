@@ -1,0 +1,133 @@
+---
+layout: post
+title:  "UE4 UObject"
+date:   2020-06-30 19:42:37 +0800
+categories: jekyll update
+---
+官方有一篇文章：
+https://docs.unrealengine.com/en-US/Programming/UnrealArchitecture/Objects/index.html
+CSDN有一篇文章：
+https://blog.csdn.net/noahzuo/article/details/73565259
+
+谈到UObject所提供的功能：
+* Garbage collection
+* Reference updating
+* Reflection
+* Serialization
+* Automatic updating of default property changes
+* Automatic property initialization
+* Automatic editor integration
+* Type information available at runtime
+* Network replication
+
+UObject本身没有成员变量，只有大量的虚方法。
+
+# HotReload如何实现的，和FVTableHelper的关系又是什么。
+
+在Build.h有WITH_HOT_RELOAD的宏
+
+   
+# 大量的虚方法的生命周期是什么。
+
+CDO不会调用PostLoad
+
+EObjectFlags 有一组生命周期的Flags
+{% highlight C++ %}
+enum EObjectFlags
+{
+  // The group of flags tracks the stages of the lifetime of a uobject
+	RF_NeedInitialization		=0x00000200,	///< This object has not completed its initialization process. Cleared when ~FObjectInitializer completes
+	RF_NeedLoad					=0x00000400,	///< During load, indicates object needs loading.
+	RF_KeepForCooker			=0x00000800,	///< Keep this object during garbage collection because it's still being used by the cooker
+	RF_NeedPostLoad				=0x00001000,	///< Object needs to be postloaded.
+	RF_NeedPostLoadSubobjects	=0x00002000,	///< During load, indicates that the object still needs to instance subobjects and fixup serialized component references
+	RF_NewerVersionExists		=0x00004000,	///< Object has been consigned to oblivion due to its owner package being reloaded, and a newer version currently exists
+	RF_BeginDestroyed			=0x00008000,	///< BeginDestroy has been called on the object.
+	RF_FinishDestroyed			=0x00010000,	///< FinishDestroy has been called on the object.
+}
+{% endhighlight %}
+
+# AddReferencedObjects 加的是什么引用，会产生什么影响。
+
+# NewObject 流程
+
+NewObject
+StaticConstructObject_Internal
+StaticAllocateObject
+StaticFindObjectFastInternal 如果找到同名对象就在同名对象上赋值
+GUObjectAllocator.AllocateUObject 找不到则创建一个新的
+FObjectInitializer 构造，推入FUObjectThreadContext中
+FUObjectThreadContext 
+*InClass->ClassConstructor 也就是 UObject::UObject(const FObjectInitializer& ObjectInitializer)
+FinalizeSubobjectClassInitialization
+
+# StaticLoadObject 流程
+
+StaticLoadObjectInternal
+StaticFindObjectFast
+StaticFindObjectFastInternal
+StaticFindObjectFastInternalThreadSafe
+LoadPackage // 找不到则加载Package
+StaticFindObjectFast // 从Package里面找
+FindObjectFast<UObjectRedirector> // 如果还找不到，但是有redirect的flag，则从UObjectRedirector找
+
+# StaticFindObject 流程
+
+StaticFindObjectFast
+
+# StaticLoadClass 流程
+
+LoadObject<UClass>
+
+# StaticDuplicateObject 流程
+
+StaticDuplicateObjectEx
+
+# StaticDuplicateObjectEx 流程
+
+StaticConstructObject_Internal
+FDuplicateDataWriter
+FDuplicateDataReader
+
+# StaticTick 流程
+
+
+
+# LoadPackage 流程
+
+LoadPackageInternal
+LoadPackageAsync
+GetAsyncPackageLoader().LoadPackage
+FlushAsyncLoading
+FindObjectFast
+
+# CollectGarbage 流程
+
+AcquireGCLock
+CollectGarbageInternal
+FlushAsyncLoading
+FCoreUObjectDelegates::GetPreGarbageCollectDelegate().Broadcast();
+IncrementalPurgeGarbage(false);
+TagUsedRealtimeGC.PerformReachabilityAnalysis(KeepFlags, bForceSingleThreadedGC, bWithClusters);
+GUObjectClusters.DissolveClusters(true);
+FCoreUObjectDelegates::PostReachabilityAnalysis.Broadcast();
+GatherUnreachableObjects(bForceSingleThreadedGC);
+UnhashUnreachableObjects(/**bUseTimeLimit = */ false);
+IncrementalPurgeGarbage(false);
+ShrinkUObjectHashTables();
+DeleteLoaders();
+FCoreUObjectDelegates::GetPostGarbageCollect().Broadcast();
+ReleaseGCLock
+
+# IncrementalPurgeGarbage 流程
+UnhashUnreachableObjects
+IncrementalDestroyGarbage
+
+# LoadObject 流程
+
+StaticLoadObject
+
+# LoadClass 流程
+
+StaticLoadClass
+
