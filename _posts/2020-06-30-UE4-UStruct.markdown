@@ -1,0 +1,38 @@
+---
+layout: post
+title:  "UE4 UStruct"
+date:   2020-07-02 17:13:37 +0800
+categories: jekyll update
+---
+UStruct有一些字段
+{% highlight C++ %}
+class UStruct
+{
+    UStruct* SuperStruct; /** Struct this inherits from, may be null */
+    UField* Children; /** Pointer to start of linked list of child fields */
+    FField* ChildProperties; /** Pointer to start of linked list of child fields */
+    int32 PropertiesSize; /** Total size of all UProperties, the allocated structure may be larger due to alignment */
+    int32 MinAlignment; /** Alignment of structure in memory, structure will be at least this large */
+    TArray<uint8> Script; /** Script bytecode associated with this object */
+    FProperty* PropertyLink; /** In memory only: Linked list of properties from most-derived to base */
+    FProperty* RefLink; /** In memory only: Linked list of object reference properties from most-derived to base */
+    FProperty* DestructorLink; /** In memory only: Linked list of properties requiring destruction. Note this does not include things that will be destroyed byt he native destructor */
+    FProperty* PostConstructLink; /** In memory only: Linked list of properties requiring post constructor initialization */
+    TArray<UObject*> ScriptAndPropertyObjectReferences; /** Array of object references embedded in script code and referenced by FProperties. Mirrored for easy access by realtime garbage collection code */
+    FUnresolvedScriptPropertiesArray* UnresolvedScriptProperties; /** Contains a list of script properties that couldn't be resolved at load time */
+    FUnversionedStructSchema* UnversionedSchema; /** Cached schema for optimized unversioned property serialization, owned by this. */
+}
+{% endhighlight %}
+
+# Children和ChildProperties的区别是什么
+
+Children是UField* ChildProperties是FField* Children会参与GC
+
+# Script是什么意思
+
+看起来是存储蓝图的opcode
+
+# 出现了很多Link是什么意思
+
+FProperty的Linklink 做了分组
+
